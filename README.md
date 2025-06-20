@@ -73,25 +73,34 @@ Download the latest release for your platform from the [releases page](https://g
 
    ```bash
    todo guide
+   # Or use the short alias
+   todo g
    ```
 
 3. **Configure the CLI:**
 
    ```bash
-   todo config 
+   todo config
+   # Or use the short alias
+   todo c
    ```
 
 4. **Start adding todos:**
 
    ```bash
    todo add "Buy groceries"
-   todo add "Complete project" --date 25-06-2025
+   # Or use the short alias
+   todo a "Complete project" --date 25-06-2025
    ```
 
 5. **View and manage your todos:**
 
    ```bash
    todo list
+   # Or use short aliases
+   todo l
+   # or
+   todo ls
    ```
 
 That's it! The interactive guide will walk you through everything else.
@@ -102,11 +111,12 @@ That's it! The interactive guide will walk you through everything else.
 - 🔧 Easy configuration setup with Notion API token and database ID
 - ➕ Add todo items to your Notion database with optional due dates
 - 📋 Interactive list view for managing todos
-- 📝 Simple and intuitive command-line interface
+- 📝 Simple and intuitive command-line interface with short aliases for faster usage
 - 🔒 Secure credential storage
 - 🎯 Direct integration with Notion API
 - 📊 Status tracking (Not started, In progress, Done)
 - 📅 Due date support for better task management
+- ⚡ Quick commands with short aliases (`todo v`, `todo a`, `todo l`, etc.)
 
 ## Prerequisites
 
@@ -244,26 +254,46 @@ The list command provides an interactive interface where you can:
 
 ### Available Commands
 
-- `todo guide` - **Interactive setup guide** for first-time users (recommended)
-- `todo config` - Configure Notion API credentials manually
-- `todo add <todo-text>` - Add a new todo item
+- `todo guide` (or `todo g`) - **Interactive setup guide** for first-time users (recommended)
+- `todo config` (or `todo c`) - Configure Notion API credentials manually
+- `todo add <todo-text>` (or `todo a`) - Add a new todo item
 - `todo add <todo-text> --date YYYY-MM-DD` - Add todo with due date
-- `todo list` - View and manage existing todos in interactive mode
-- `todo version` - Show version information
+- `todo list` (or `todo l`, `todo ls`) - View and manage existing todos in interactive mode
+- `todo version` (or `todo v`) - Show version information
 - `todo help` - Show help information
+
+#### Short Command Aliases
+
+For faster usage, you can use these short aliases:
+
+- `todo v` → `todo version`
+- `todo a` → `todo add`
+- `todo l` → `todo list`
+- `todo ls` → `todo list`
+- `todo g` → `todo guide`
+- `todo c` → `todo config`
 
 ### Command Examples
 
 ```bash
 # First-time setup
 todo guide
+# Or use the short alias
+todo g
 
 # Add todos
 todo add "Buy milk"
-todo add "Finish presentation" --date 2025-06-25
+todo a "Finish presentation" --date 2025-06-25
 
 # View and manage
 todo list
+# Or use short aliases
+todo l
+todo ls
+
+# Check version
+todo version
+todo v
 
 # Get help
 todo help
