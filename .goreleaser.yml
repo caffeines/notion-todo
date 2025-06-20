@@ -1,0 +1,77 @@
+version: 2
+
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    # Ignore windows/arm64 combination
+    ignore:
+      - goos: windows
+        goarch: arm64
+    main: ./main.go
+    binary: todo
+    ldflags:
+      - -s -w -X github.com/caffeines/notion-todo/consts.Version={{.Version}}
+
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    files:
+      - README.md
+      - LICENSE
+    formats:
+      - tar.gz
+      - zip
+    format_overrides:
+    - goos: windows
+      format: zip
+    - goos: darwin
+      format: tar.gz
+    - goos: linux
+      format: tar.gz
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+# Homebrew formula publishing
+brews:
+  - name: notion-todo
+    repository:
+      owner: caffeines
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/caffeines/notion-todo"
+    description: "A command-line interface for managing todo items using Notion database integration"
+    license: "MIT"
+    test: |
+      system "#{bin}/todo version"
+    install: |
+      bin.install "todo"
