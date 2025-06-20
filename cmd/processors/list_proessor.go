@@ -79,6 +79,13 @@ type statusUpdateMsg struct {
 	message   string
 }
 
+// Delete message for async delete operations
+type deleteMsg struct {
+	success bool
+	todoID  string
+	message string
+}
+
 // Refresh message for async refresh operations
 type refreshMsg struct {
 	success bool
@@ -88,21 +95,23 @@ type refreshMsg struct {
 
 // Bubble Tea model
 type model struct {
-	todos            []Todo
-	cursor           int
-	statusList       []string
-	updating         bool
-	refreshing       bool
-	message          string
-	messageTime      time.Time
-	showConfirmation bool
-	pendingTodoID    string
-	pendingNewStatus string
-	pendingOldStatus string
-	statusFilter     string
-	width            int
-	height           int
-	errorMsg         string
+	todos              []Todo
+	cursor             int
+	statusList         []string
+	updating           bool
+	refreshing         bool
+	message            string
+	messageTime        time.Time
+	showConfirmation   bool
+	showDeleteConfirm  bool
+	pendingTodoID      string
+	pendingNewStatus   string
+	pendingOldStatus   string
+	pendingDeleteTitle string
+	statusFilter       string
+	width              int
+	height             int
+	errorMsg           string
 }
 
 // Minimalistic and clean styling - responsive
@@ -160,20 +169,22 @@ func getConfirmationContainerStyle(width int) lipgloss.Style {
 
 func initialModel(statusFilter string) model {
 	return model{
-		todos:            []Todo{}, // Start with empty todos
-		cursor:           0,
-		statusList:       []string{"Pending", "In Progress", "Done"}, // Use actual status values that match the dummy data
-		updating:         false,
-		refreshing:       true, // Set to true to show loading state
-		message:          "Loading todos...",
-		messageTime:      time.Now(),
-		showConfirmation: false,
-		pendingTodoID:    "",
-		pendingNewStatus: "",
-		pendingOldStatus: "",
-		statusFilter:     statusFilter,
-		width:            80, // Default width
-		height:           24, // Default height
+		todos:              []Todo{}, // Start with empty todos
+		cursor:             0,
+		statusList:         []string{"Pending", "In Progress", "Done"}, // Use actual status values that match the dummy data
+		updating:           false,
+		refreshing:         true, // Set to true to show loading state
+		message:            "Loading todos...",
+		messageTime:        time.Now(),
+		showConfirmation:   false,
+		showDeleteConfirm:  false,
+		pendingTodoID:      "",
+		pendingNewStatus:   "",
+		pendingOldStatus:   "",
+		pendingDeleteTitle: "",
+		statusFilter:       statusFilter,
+		width:              80, // Default width
+		height:             24, // Default height
 	}
 }
 
@@ -291,6 +302,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		if m.showDeleteConfirm {
+			switch msg.String() {
+			case "y", "Y", "enter":
+				// Confirm the delete
+				m.showDeleteConfirm = false
+				m.updating = true
+				// Call API to delete todo
+				return m, deleteTodoCmd(m.pendingTodoID)
+			case "n", "N", "esc":
+				// Cancel the delete
+				m.showDeleteConfirm = false
+				m.pendingTodoID = ""
+				m.pendingDeleteTitle = ""
+			}
+			return m, nil
+		}
+
 		// Prevent actions during update or refresh
 		if m.updating || m.refreshing {
 			switch msg.String() {
@@ -356,6 +384,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.message = "Syncing..."
 			m.messageTime = time.Now()
 			return m, refreshTodosCmd(m.statusFilter)
+		case "d", "D":
+			if len(m.todos) > 0 && !m.updating {
+				// Show delete confirmation
+				todo := &m.todos[m.cursor]
+				m.showDeleteConfirm = true
+				m.pendingTodoID = todo.ID
+				m.pendingDeleteTitle = todo.Title
+			}
 
 		}
 
@@ -372,6 +408,31 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.message = msg.message
 		} else {
 			// Update failed - show error message
+			m.message = msg.message
+		}
+		m.messageTime = time.Now()
+
+	case deleteMsg:
+		m.updating = false
+		if msg.success {
+			// Delete was successful - remove todo from local list and show success message
+			for i := range m.todos {
+				if m.todos[i].ID == msg.todoID {
+					// Remove the todo from the slice
+					m.todos = append(m.todos[:i], m.todos[i+1:]...)
+					// Adjust cursor if necessary
+					if m.cursor >= len(m.todos) && len(m.todos) > 0 {
+						m.cursor = len(m.todos) - 1
+					}
+					if len(m.todos) == 0 {
+						m.cursor = 0
+					}
+					break
+				}
+			}
+			m.message = msg.message
+		} else {
+			// Delete failed - show error message
 			m.message = msg.message
 		}
 		m.messageTime = time.Now()
@@ -408,7 +469,7 @@ func (m model) View() string {
 		} else {
 			if m.errorMsg != "" {
 				emptyMessage = m.errorMsg
-			} else if m.showConfirmation {
+			} else if m.showConfirmation || m.showDeleteConfirm {
 				emptyMessage = "Confirm your action"
 			} else {
 				// Default empty message when no todos and not refreshing
@@ -435,6 +496,17 @@ func (m model) View() string {
 		}
 
 		confirmationText := fmt.Sprintf("Change '%s' to '%s'?", todo, m.pendingNewStatus)
+		confirmation := tpl.ConfirmationStyle.Render(confirmationText) + "\n\n" +
+			tpl.HelpStyle.Render("y: confirm • n: cancel")
+
+		return confirmationContainerStyle.Render(confirmation)
+	}
+
+	// Show delete confirmation dialog if needed
+	if m.showDeleteConfirm {
+		confirmationContainerStyle := getConfirmationContainerStyle(m.width)
+
+		confirmationText := fmt.Sprintf("Delete '%s'?", m.pendingDeleteTitle)
 		confirmation := tpl.ConfirmationStyle.Render(confirmationText) + "\n\n" +
 			tpl.HelpStyle.Render("y: confirm • n: cancel")
 
@@ -504,9 +576,9 @@ func (m model) View() string {
 	}
 
 	// Minimal help text
-	helpText := "↑↓: navigate • ←→: status • r: refresh • q: quit"
-	if m.width < 45 {
-		helpText = "↑↓←→ r q"
+	helpText := "↑↓: navigate • ←→: status • d: delete • r: refresh • q: quit"
+	if m.width < 60 {
+		helpText = "↑↓←→ d r q"
 	}
 	help := tpl.HelpStyle.Render(helpText)
 
@@ -577,5 +649,30 @@ func List(cmd *cobra.Command, args []string) {
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error running Bubble Tea program:", err)
 		os.Exit(1)
+	}
+}
+
+// Delete todo using Notion API
+func deleteTodoCmd(todoID string) tea.Cmd {
+	return func() tea.Msg {
+		// Initialize services
+		credService := config.NewCredentialSvc(files.NewFileService(consts.ConfigFileName))
+		notionSvc := notion.NewNotionImpl(credService)
+
+		// Call Notion API to delete todo
+		err := notionSvc.DeletePage(todoID)
+		if err != nil {
+			return deleteMsg{
+				success: false,
+				todoID:  todoID,
+				message: fmt.Sprintf("Failed to delete: %v", err),
+			}
+		}
+
+		return deleteMsg{
+			success: true,
+			todoID:  todoID,
+			message: "Todo deleted successfully",
+		}
 	}
 }

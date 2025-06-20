@@ -257,3 +257,57 @@ func (n *notionImpl) UpdatePageStatus(pageID, status string) error {
 
 	return nil
 }
+
+// DeletePage deletes a page from Notion (archives it)
+func (n *notionImpl) DeletePage(pageID string) error {
+	config, err := n.credentialService.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get config: %v", err)
+	}
+
+	// Notion API URL for updating a page (we archive it by setting archived: true)
+	url := fmt.Sprintf("https://api.notion.com/v1/pages/%s", pageID)
+
+	// Create the request payload to archive the page
+	updateReq := map[string]interface{}{
+		"archived": true,
+	}
+
+	// Convert to JSON
+	jsonData, err := json.Marshal(updateReq)
+	if err != nil {
+		return fmt.Errorf("failed to marshal delete request: %v", err)
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", consts.CONTENT_TYPE)
+	req.Header.Set("Authorization", "Bearer "+config.Token)
+	req.Header.Set("Notion-Version", consts.NOTION_VERSION)
+
+	// Send request
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body for error reporting
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	// Check status code
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("notion API error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
