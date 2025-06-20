@@ -61,7 +61,7 @@ TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
 # Download and extract
-curl -L -o "$FILENAME" "$DOWNLOAD_URL"
+curl -L -o "$FILENAME" "$DOWNLOAD_URL" -s
 if [[ $? -ne 0 ]]; then
     echo -e "${RED}Download failed${NC}"
     exit 1
