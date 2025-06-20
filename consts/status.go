@@ -1,6 +1,9 @@
 package consts
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 const (
 	// StatusTodo represents the "Todo" status
@@ -34,4 +37,26 @@ func GetAllStatuses() string {
 		StatusCancelled,
 		StatusBlocked,
 	)
+}
+
+func IsValidStatus(status string) bool {
+	validStatuses := []string{
+		StatusTodo,
+		StatusInProgress,
+		StatusDone,
+		StatusNotStarted,
+		StatusOnHold,
+		StatusCancelled,
+		StatusBlocked,
+	}
+
+	for _, validStatus := range validStatuses {
+		if status == "" {
+			return false
+		}
+		if strings.EqualFold(status, validStatus) {
+			return true
+		}
+	}
+	return false
 }

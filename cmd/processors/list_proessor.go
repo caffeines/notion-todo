@@ -9,6 +9,8 @@ import (
 	tpl "github.com/caffeines/notion-todo/cmd/template"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/caffeines/notion-todo/consts"
 	"github.com/caffeines/notion-todo/service/config"
@@ -641,6 +643,15 @@ func truncateText(text string, maxWidth int) string {
 
 func List(cmd *cobra.Command, args []string) {
 	status, _ := cmd.Flags().GetString("status")
+
+	// Validate status filter
+	if status != "" && !consts.IsValidStatus(status) {
+		fmt.Printf("Invalid status filter: '%s'. Valid statuses are: %s\n", status, consts.GetAllStatuses())
+		os.Exit(1)
+	}
+
+	status = cases.Title(language.English).String(status) // Normalize status to title case
+
 	p := tea.NewProgram(
 		initialModel(status),
 		tea.WithAltScreen(),       // Use alternate screen buffer
