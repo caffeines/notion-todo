@@ -647,8 +647,9 @@ func truncateText(text string, maxWidth int) string {
 }
 
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all items in the Notion Todo database",
+	Use:     "list",
+	Aliases: []string{"l", "ls"},
+	Short:   "List all items in the Notion Todo database",
 	Long: `list retrieves and displays all items from the Notion Todo database.
 This command is useful for viewing all tasks, their statuses, and due dates in a structured format.`,
 	Run: func(cmd *cobra.Command, args []string) {

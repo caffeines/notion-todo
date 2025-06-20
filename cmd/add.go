@@ -8,13 +8,15 @@ import (
 
 // addCmd represents the add command
 var addCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Add a todo item",
-	Long:  `Add a todo item to the Notion database with an optional due date.`,
-	Run:   processors.Add,
-	Args:  cobra.MinimumNArgs(1),
+	Use:     "add",
+	Aliases: []string{"a"},
+	Short:   "Add a todo item",
+	Long:    `Add a todo item to the Notion database with an optional due date.`,
+	Run:     processors.Add,
+	Args:    cobra.MinimumNArgs(1),
 	Example: `todo add "Buy groceries" --date 15-03-25
-todo add "Finish project report"`,
+todo a "Finish project report"
+todo add "Call dentist" -d 20-06-25`,
 }
 
 func init() {

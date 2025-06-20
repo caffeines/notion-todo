@@ -16,9 +16,10 @@ import (
 
 // configCmd represents the config command
 var configCmd = &cobra.Command{
-	Use:   "config",
-	Short: "Configure the app",
-	Long:  `Configure the app by setting the token and database id.`,
+	Use:     "config",
+	Aliases: []string{"c"},
+	Short:   "Configure the app",
+	Long:    `Configure the app by setting the token and database id.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		tokenValidate := func(input string) error {
 			if len(input) == 0 {
