@@ -110,17 +110,19 @@ That's it! The interactive guide will walk you through everything else.
 - 💡 **Interactive Setup Guide** - Step-by-step walkthrough for first-time users
 - 🔧 Easy configuration setup with Notion API token and database ID
 - ➕ Add todo items to your Notion database with optional due dates
-- 📋 Interactive list view for managing todos
+- 📋 Interactive list view for managing todos with delete and status update capabilities
+- ❌ Delete unwanted todo items directly from the CLI
 - 📝 Simple and intuitive command-line interface with short aliases for faster usage
 - 🔒 Secure credential storage
 - 🎯 Direct integration with Notion API
-- 📊 Status tracking (Not started, In progress, Done)
+- 📊 Status tracking and validation (Not started, In progress, Done)
 - 📅 Due date support for better task management
 - ⚡ Quick commands with short aliases (`todo v`, `todo a`, `todo l`, etc.)
+- 🔄 Status normalization and validation to ensure data consistency
 
 ## Prerequisites
 
-- Go 1.19 or higher
+- Go 1.23 or higher
 - A Notion account with API access
 - A Notion database set up for todo items
 
@@ -250,6 +252,8 @@ The list command provides an interactive interface where you can:
 - View todos by status (Todo, In progress, Done)
 - Navigate through your todos
 - See due dates and completion status
+- Delete unwanted todo items
+- Update todo status
 - Manage your todo items efficiently
 
 ### Available Commands
@@ -301,32 +305,54 @@ todo help
 
 ## Project Structure
 
-```
+```text
 ├── cmd/                    # CLI commands
 │   ├── add.go             # Add todo command
-│   ├── config.go          # Configuration command  
+│   ├── config.go          # Configuration command
+│   ├── guide.go           # Interactive setup guide command
+│   ├── list.go            # List and manage todos command
 │   ├── root.go            # Root command
-│   └── version.go         # Version command
+│   ├── version.go         # Version command
+│   ├── processors/        # Command processors
+│   │   ├── add_processor.go
+│   │   ├── guide_processor.go
+│   │   ├── list_processor.go
+│   │   ├── root_processor.go
+│   │   └── version_processor.go
+│   ├── steps/             # Guide step implementations
+│   │   └── guide_steps.go
+│   └── template/          # UI templates and styles
+│       ├── guide_template.go
+│       └── styles.go
+├── consts/                # Application constants
+│   ├── config.go          # Configuration constants
+│   ├── notion.go          # Notion API constants
+│   ├── status.go          # Status constants
+│   └── version.go         # Version information
 ├── models/                # Data models
 │   ├── config.go          # Configuration model
 │   ├── createTodoPayload.go # Notion API payload
 │   └── todoItem.go        # Todo item structure
-├── notion/                # Notion API integration
-│   ├── notion.go          # Interface
-│   └── notionImpl.go      # Implementation
 ├── service/               # Business logic services
-│   ├── credential.go      # Credential interface
-│   ├── credentialImpl.go  # Credential implementation
-│   ├── file.go           # File interface
-│   ├── FileImpl.go       # File implementation
-│   ├── todo.go           # Todo interface
-│   └── todoImpl.go       # Todo implementation
+│   ├── config/            # Configuration services
+│   │   ├── credential.go
+│   │   └── credentialImpl.go
+│   ├── files/             # File handling services
+│   │   ├── file.go
+│   │   └── FileImpl.go
+│   ├── notion/            # Notion API integration
+│   │   ├── notion.go
+│   │   └── notionImpl.go
+│   └── utility/           # Utility services
+│       ├── todo_utility.go
+│       └── utility.go
 └── main.go               # Application entry point
 ```
 
 ## Configuration Storage
 
 The application stores your configuration in a hidden directory:
+
 - Path: `~/.notion-todo/config.json`
 - Contains encrypted credentials for secure storage
 
@@ -334,26 +360,26 @@ The application stores your configuration in a hidden directory:
 
 ### Common Issues
 
-**"Failed to create todo" or "Database not found"**
+#### "Failed to create todo" or "Database not found"
 
 - Make sure your integration is connected to the database (step 5 in the guide)
 - Verify your Database ID is correct
 - Check that your API token is valid
 
-**"Property not found" errors**
+#### "Property not found" errors
 
 - Ensure your database has the exact properties: "Title", "Status", "Due Date"
 - Property names are case-sensitive  
 - The Status property must be of type "Select" with options: "Todo", "In progress", "Done"
 - Consider using the template for correct setup
 
-**Configuration issues**
+#### Configuration issues
 
 - Run `todo config` to reconfigure your credentials
 - Check if `~/.notion-todo/config.json` exists and has valid JSON
 - Re-run the setup guide: `todo guide`
 
-**Need help?**
+#### Need help?
 
 - Run `todo guide` for the interactive setup
 - Use `todo help` for command information
@@ -363,17 +389,17 @@ The application stores your configuration in a hidden directory:
 
 The project follows a clean architecture pattern with:
 
-- **Commands** ([`cmd/`](cmd/)): CLI command handlers using Cobra
-- **Services** ([`service/`](service/)): Business logic with interfaces and implementations
+- **Commands** ([`cmd/`](cmd/)): CLI command handlers using Cobra with dedicated processors
+- **Services** ([`service/`](service/)): Business logic organized by domain (config, files, notion, utility)
 - **Models** ([`models/`](models/)): Data structures for API communication
-- **Notion Integration** ([`notion/`](notion/)): Notion API client implementation
+- **Constants** ([`consts/`](consts/)): Application-wide constants and configuration
+- **Processors** ([`cmd/processors/`](cmd/processors/)): Command-specific business logic handlers
 
 Key interfaces:
 
-- [`service.Todo`](service/todo.go): Todo operations
-- [`service.Credential`](service/credential.go): Credential management
-- [`service.File`](service/file.go): File operations
-- [`notion.Notion`](notion/notion.go): Notion API operations
+- [`service/notion/notion.go`](service/notion/notion.go): Notion API operations
+- [`service/config/credential.go`](service/config/credential.go): Credential management
+- [`service/files/file.go`](service/files/file.go): File operations
 
 ## Development
 
@@ -399,6 +425,7 @@ go test ./...
 - [Bubble Tea](https://github.com/charmbracelet/bubbletea) - Terminal UI framework for interactive guide
 - [Lip Gloss](https://github.com/charmbracelet/lipgloss) - Style and layout for terminal interfaces
 - [PromptUI](https://github.com/manifoldco/promptui) - Interactive prompts
+- [Spinner](https://github.com/briandowns/spinner) - Loading spinners for CLI operations
 
 ## License
 
